@@ -7,11 +7,27 @@ package com.github.sunnybat.commoncode.error;
  */
 public class ErrorBuilder {
 
+  static {
+    if (java.awt.GraphicsEnvironment.isHeadless()) {
+      forceCLine = true;
+    }
+  }
+
+  private static boolean forceCLine;
+
+  /**
+   * Forces all Error Windows that are built to be output to the console instead of displayed.
+   */
+  public static void forceCommandLine() {
+    forceCLine = true;
+  }
+
   private String windowTitle = "Error Information";
   private String errorTitle = "An error has occurred";
   private String errorMessage = ""; // So appendToErrorMessage doesn't throw NPE
   private String buttonText = "Error Information";
   private Throwable error;
+  private boolean commandLine;
   private boolean fatalError;
   private boolean built;
 
@@ -19,9 +35,6 @@ public class ErrorBuilder {
    * Creates a new ErrorBuilder.
    */
   public ErrorBuilder() {
-//    if (java.awt.GraphicsEnvironment.isHeadless()) {
-//      throw new IllegalStateException("Program is in headless mode.");
-//    } // Should instead just display on command-line?
   }
 
   /**
@@ -76,7 +89,7 @@ public class ErrorBuilder {
    * @return The modified ErrorBuilder object
    * @throws UnsupportedOperationException Because this method is currently unimplemented
    */
-  private ErrorBuilder setButtonText(String text) { // Change to public later
+  public ErrorBuilder setButtonText(String text) {
     buttonText = text;
     return this;
   }
@@ -92,9 +105,15 @@ public class ErrorBuilder {
     return this;
   }
 
+  public ErrorBuilder setCommandLine() {
+    this.commandLine = true;
+    return this;
+  }
+
   /**
    * Sets the Fatal Error flag to true. Only goes into effect when this Error Window is built. When enabled, the program will be killed once all error
-   * windows are closed.
+   * windows are closed.<br>
+   * This has no effect if command-line has been enabled.
    *
    * @return The modified ErrorBuilder object
    */
@@ -112,10 +131,21 @@ public class ErrorBuilder {
     if (built) {
       throw new IllegalStateException("Error window has already been built.");
     }
-    if (fatalError) {
-      ErrorDisplay.fatalError();
+    if (commandLine || forceCLine) {
+      System.out.println("=== Command-Line Error Display ===");
+      System.out.println("Window Title: " + windowTitle);
+      System.out.println("Error Title: " + errorTitle);
+      System.out.println("Error Message: " + errorMessage);
+      if (error != null) {
+        System.out.println("Stack Trace:");
+        error.printStackTrace();
+      }
+    } else {
+      if (fatalError) {
+        ErrorDisplay.fatalError();
+      }
+      ErrorDisplay.showErrorWindow(windowTitle, errorTitle, errorMessage, buttonText, error);
     }
-    ErrorDisplay.showErrorWindow(windowTitle, errorTitle, errorMessage, buttonText, error);
     built = true;
   }
 
